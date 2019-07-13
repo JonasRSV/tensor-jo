@@ -59,11 +59,11 @@ class node():
         if self.cached:
             return self.gradient
 
-        self.gradient = np.zeroes_like(self.t)
-
         # Store this before the loop so we don't
         # call it in every iteration
         o = self.output()
+
+        self.gradient = np.zeros_like(o)
         for con in self.c:
             con_wrt_n = con.t.gradient_wrt(n)
             self_wrt_con = con.gradient_op(o)
