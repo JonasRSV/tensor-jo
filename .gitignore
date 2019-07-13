@@ -1,0 +1,8 @@
+.venv/
+.ropeproject/
+dist/
+build/
+tensorjo.egg-info/
+.pytest_cache
+test/__pycache__
+tensorjo/__pycache__
