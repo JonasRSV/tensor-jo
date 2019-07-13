@@ -1,12 +1,12 @@
-"""This files defines the normal addition op."""
+"""This files defines the normal multiplication op."""
 from tensorjo import op
 from tensorjo import tensor
 import typecheck as tc
 import numpy as np
 
 
-class addition(op.Op):
-    """This class implements the forward and backward pass for addition."""
+class multiplication(op.Op):
+    """Implements the forward and backward pass for multiplication."""
 
     @tc.typecheck
     def __init__(self, m1: tensor, m2: tensor):
@@ -23,23 +23,28 @@ class addition(op.Op):
         in an op.
         """
         try:
-            m1.v + m2.v
+            m1.v * m2.v
         except ValueError as e:
             raise ValueError(
-                "Failed to construct addition op with tensors %s and %s " %
-                (m1, m2) + "- %s" % e)
+                "Failed to construct multiplication op with tensors %s and %s "
+                % (m1, m2) + "- %s" % e)
 
         self.m1 = m1
         self.m2 = m2
 
     def forward(self, first: np.ndarray, second: np.ndarray) -> np.ndarray:
         """Implement the forward pass of the op."""
-        return first + second
+        # Remember the inputs from the forward pass
+        # for the gradient calculations
+        self.m1.v = first
+        self.m2.v = second
+
+        return first * second
 
     def backward_first(self, first: np.ndarray) -> np.ndarray:
         """Implement the backward pass of first tensor."""
-        return np.ones_like(first)
+        return np.ones_like(first) * self.m2.v
 
     def backward_second(self, second: np.ndarray) -> np.ndarray:
         """Implement the backward pass of second tensor."""
-        return np.ones_like(second)
+        return self.m1.v * np.ones_like(second)

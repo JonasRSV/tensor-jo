@@ -1,4 +1,4 @@
-"""This module defines the graph. TODO Some errors in this file with gradient calculations"""
+"""This module defines the graph."""
 from abc import abstractmethod
 from tensorjo import tensor
 from . import op as operator
@@ -10,20 +10,42 @@ class node():
     """All nodes are monoids or primitives under tensors and ops."""
 
     @abstractmethod
-    def output(self) -> tensor:
+    def output(self) -> np.ndarray:
         """Propagate value through node."""
         pass
 
     def gradient_wrt(self, n: "node") -> np.ndarray:
-        """Calculate the gradient wrt n."""
+        """Calculate the gradient wrt n.
+
+        This is super central.
+
+        This uses the chain rule as follows:
+
+        Notation:
+
+        c_node = output of current node
+        n_i_node = output of next node
+        err = the error we are calculating the gradient wrt
+        using d as prefix means derivative.
+
+        derr / dc_node = sum_{i} (derr / dn_i_node) * (dn_i_node / dc_node)
+
+        In words:
+        The gradient with respect to the current nodes output is:
+        'The sum of the contributions to the next nodes times the next nodes
+        contribution to the error'
+        """
         gradient = np.zeroes_like(self.t)
 
+        # Store this before the loop so we don't
+        # call it in every iteration
+        o = self.output()
         for con in self.c:
             con_wrt_n = con.t.gradient_wrt(n)
-            self_wrt_con = con.gradient_op(self.t)
+            self_wrt_con = con.gradient_op(o)
 
-            # Chain rule
-            gradient += con_wrt_n * self_wrt_con
+            # This might be the most important line of all in this program
+            gradient += (con_wrt_n * self_wrt_con)
 
         return gradient
 
