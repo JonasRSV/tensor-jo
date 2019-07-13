@@ -6,3 +6,4 @@ tensorjo.egg-info/
 .pytest_cache
 test/__pycache__
 tensorjo/__pycache__
+tensorjo/ops/__pycache__

@@ -1,6 +1,5 @@
 """Numpy arrays are the base arrays for the tensors."""
 import numpy as np
-from . import outputable
 
 
 class tensor():
@@ -11,7 +10,7 @@ class tensor():
     def __init__(self, v):
         """Initialize tensor by converting the value to a float numpy array."""
         if type(v) == np.ndarray and v.dtype in tensor.valid_types:
-            self.v = v
+            self.v: np.ndarray = v
 
         invalid_type_err = lambda s: ("Invalid tensor type %s" % s)\
             + "Please convert it into a float or float array"
@@ -26,9 +25,10 @@ class tensor():
             raise ValueError(invalid_type_err(v))
 
         try:
-            self.v = np.array(v, dtype=np.float32)
+            self.v: np.ndarray = np.array(v, dtype=np.float32)
         except Exception as e:
             raise ValueError(invalid_type_err(v))
+
 
     @property
     def shape(self):

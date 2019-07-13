@@ -1,7 +1,7 @@
 """This module defines the structure of the op in the graph."""
-import typecheck as tc
 from tensorjo import tensor
 from abc import abstractmethod
+import numpy as np
 
 
 class Op():
@@ -21,8 +21,7 @@ class Op():
     """
 
     @abstractmethod
-    @tc.typecheck
-    def forward(self, m1: tensor, m2: tensor):
+    def forward(self, m1: np.ndarray, m2: np.ndarray) -> np.ndarray:
         """Forward pass in the graph.
 
         Should always be a monoid for the tensors. No additional state.
@@ -30,8 +29,7 @@ class Op():
         pass
 
     @abstractmethod
-    @tc.typecheck
-    def backward_first(self, first: tensor, output: tensor):
+    def backward_first(self, first: np.ndarray) -> np.ndarray:
         """Backward pass in the graph.
 
         Returns the gradients of wrt with respect to output
@@ -39,8 +37,7 @@ class Op():
         pass
 
     @abstractmethod
-    @tc.typecheck
-    def backward_second(self, second: tensor, output: tensor):
+    def backward_second(self, second: np.ndarray) -> np.ndarray:
         """Backward pass in the graph.
 
         Returns the gradients of wrt with respect to output
