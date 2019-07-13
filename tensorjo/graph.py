@@ -9,6 +9,19 @@ import numpy as np
 class node():
     """All nodes are monoids or primitives under tensors and ops."""
 
+    def __init__(self):
+        """Store results of gradient calculations.
+
+        When calculating the gradient for one tensor the gradient for
+        all tensors which that tensor affect will also be calculated.
+
+        To avoid doing many dubble calculations we store the gradient
+        calculations throughout the backprops so that only gradients have to
+        be calculated once per backprop.
+        """
+        self.gradient = None
+        self.cached = False
+
     @abstractmethod
     def output(self) -> np.ndarray:
         """Propagate value through node."""
@@ -35,7 +48,18 @@ class node():
         'The sum of the contributions to the next nodes times the next nodes
         contribution to the error'
         """
-        gradient = np.zeroes_like(self.t)
+        # Base case
+        # This also makes sure that all the ops state are updated since
+        # We are calling a forward pass from the final node.
+        if self == n:
+            return np.ones_like(self.output())
+
+        # Second base case
+        # Cache'd gradient
+        if self.cached:
+            return self.gradient
+
+        self.gradient = np.zeroes_like(self.t)
 
         # Store this before the loop so we don't
         # call it in every iteration
@@ -45,9 +69,10 @@ class node():
             self_wrt_con = con.gradient_op(o)
 
             # This might be the most important line of all in this program
-            gradient += (con_wrt_n * self_wrt_con)
+            self.gradient += (con_wrt_n * self_wrt_con)
 
-        return gradient
+        self.cached = True
+        return self.gradient
 
 
 class connection():
@@ -75,6 +100,8 @@ class primitive(node):
 
     def output(self) -> tensor:
         """Return the tensor."""
+        self.cached = False
+
         return self.t
 
 
@@ -93,6 +120,8 @@ class monoid(node):
 
     def output(self) -> np.ndarray:
         """Apply op on the inputs."""
+        self.cached = False
+
         return self.op.forward(self.m1.output(), self.m2.output())
 
 
