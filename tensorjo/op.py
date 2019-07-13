@@ -21,7 +21,7 @@ class Op():
     """
 
     @abstractmethod
-    def forward(self, m1: np.ndarray, m2: np.ndarray) -> np.ndarray:
+    def forward(self, first: np.ndarray, second: np.ndarray) -> np.ndarray:
         """Forward pass in the graph.
 
         Should always be a monoid for the tensors. No additional state.
@@ -32,7 +32,7 @@ class Op():
     def backward_first(self, first: np.ndarray) -> np.ndarray:
         """Backward pass in the graph.
 
-        Returns the gradients of wrt with respect to output
+        Returns the gradients of first wrt output
         """
         pass
 
@@ -40,6 +40,6 @@ class Op():
     def backward_second(self, second: np.ndarray) -> np.ndarray:
         """Backward pass in the graph.
 
-        Returns the gradients of wrt with respect to output
+        Returns the gradients of second wrt output
         """
         pass
