@@ -1,5 +1,4 @@
 """This module defines the structure of the op in the graph."""
-from tensorjo import tensor
 from abc import abstractmethod
 import numpy as np
 
@@ -21,25 +20,45 @@ class Op():
     """
 
     @abstractmethod
-    def forward(self, first: np.ndarray, second: np.ndarray) -> np.ndarray:
+    def forward(self, *args) -> np.ndarray:
         """Forward pass in the graph.
 
         Should always be a monoid for the tensors. No additional state.
         """
         pass
 
-    @abstractmethod
-    def backward_first(self, first: np.ndarray) -> np.ndarray:
+    def backward_functor(self) -> np.ndarray:
+        """Backward pass in the graph.
+
+        Returns the gradient wrt to the functor.
+        """
+        raise NotImplementedError("Backward_functor is not implemented.")
+
+    def backward_first(self) -> np.ndarray:
         """Backward pass in the graph.
 
         Returns the gradients of first wrt output
         """
-        pass
+        raise NotImplementedError("Backward_first is not implemented.")
 
-    @abstractmethod
-    def backward_second(self, second: np.ndarray) -> np.ndarray:
+    def backward_second(self) -> np.ndarray:
         """Backward pass in the graph.
 
         Returns the gradients of second wrt output
         """
+        raise NotImplementedError("Backward_second is not implemented.")
+
+    @abstractmethod
+    def cache(self) -> np.ndarray:
+        """Return output from previous forward pass."""
+        pass
+
+    @abstractmethod
+    def shape(self) -> tuple:
+        """Return the output shape of this op."""
+        pass
+
+    @abstractmethod
+    def name(self) -> str:
+        """Name of the op."""
         pass

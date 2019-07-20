@@ -1,137 +1,110 @@
 """This module defines the graph."""
-from abc import abstractmethod
-from tensorjo import tensor
+import tensorjo
 from . import op as operator
-import typecheck as tc
+from . import node
 import numpy as np
+import logging
+
+LOGGER = logging.Logger(__name__)
 
 
-class node():
-    """All nodes are monoids or primitives under tensors and ops."""
+class graph():
+    """Keep track of all nodes and provides some utilities."""
 
-    def __init__(self):
-        """Store results of gradient calculations.
+    def __init__(self, name: str):
+        """Initialize the graph."""
+        self.name = name
+        self.nodes = {}
 
-        When calculating the gradient for one tensor the gradient for
-        all tensors which that tensor affect will also be calculated.
+        # variables are also contained in nodes
+        # This exists because variables are probably
+        # going to be requested often for gradient calculations
+        self.variables = {}
 
-        To avoid doing many dubble calculations we store the gradient
-        calculations throughout the backprops so that only gradients have to
-        be calculated once per backprop.
-        """
-        self.gradient = None
-        self.cached = False
+    def get_variables(self, names: [str] = None):
+        """Return the variables in the names list."""
+        if names is None:
+            return list(self.variables.values())
 
-    @abstractmethod
-    def output(self) -> np.ndarray:
-        """Propagate value through node."""
-        pass
+        vars = []
+        for name in names:
+            if name in self.variables:
+                vars.append(self.variables[name])
+            else:
+                raise ValueError("%s is not a variable in the graph %s" %
+                                 (name, self.name))
 
-    def gradient_wrt(self, n: "node") -> np.ndarray:
-        """Calculate the gradient wrt n.
+        return vars
 
-        This is super central.
+    def get_nodes(self, names: [str] = None):
+        """Return the nodes in the names list."""
+        if names is None:
+            return list(self.nodes.values())
 
-        This uses the chain rule as follows:
+        nodes = []
+        for name in names:
+            if name in self.nodes:
+                nodes.append(self.nodes[name])
+            else:
+                raise ValueError("%s is not a node in the graph %s" %
+                                 (name, self.name))
 
-        Notation:
+        return nodes
 
-        c_node = output of current node
-        n_i_node = output of next node
-        err = the error we are calculating the gradient wrt
-        using d as prefix means derivative.
+    def add(self, n: "node.node", variable=False):
+        """Add a node to the graph."""
+        while n.name in self.nodes:
+            nn = tensorjo.naming.get_node_name(n.name)
+            LOGGER.warning("%s is already in the graph renaming it to: %s" %
+                           (n.name, nn))
+            n.name = nn
 
-        derr / dc_node = sum_{i} (derr / dn_i_node) * (dn_i_node / dc_node)
+        self.nodes[n.name] = n
 
-        In words:
-        The gradient with respect to the current nodes output is:
-        'The sum of the contributions to the next nodes times the next nodes
-        contribution to the error'
-        """
-        # Base case
-        # This also makes sure that all the ops state are updated since
-        # We are calling a forward pass from the final node.
-        if self == n:
-            return np.ones_like(self.output())
+        if variable:
+            self.variables[n.name] = n
 
-        # Second base case
-        # Cache'd gradient
-        if self.cached:
-            return self.gradient
-
-        # Store this before the loop so we don't
-        # call it in every iteration
-        o = self.output()
-
-        self.gradient = np.zeros_like(o)
-        for con in self.c:
-            con_wrt_n = con.t.gradient_wrt(n)
-            self_wrt_con = con.gradient_op(o)
-
-            # This might be the most important line of all in this program
-            self.gradient += (con_wrt_n * self_wrt_con)
-
-        self.cached = True
-        return self.gradient
+    def clear(self):
+        """Clear the entire graph."""
+        self.nodes = {}
+        self.variables = {}
 
 
-class connection():
-    """Connections between node to add information.
-
-    The information is which gradient op the node
-    should call to receive its gradients.
-    """
-
-    def __init__(self, t: node, gradient_op):
-        """Initialize the connection with the nodes and gradient op."""
-        self.t: node = t
-        self.gradient_op = gradient_op
-
-
-class primitive(node):
-    """Primitive node acts as entry to graph."""
-
-    @tc.typecheck
-    def __init__(self, t: tensor):
-        """Primitive node consists of only a tensor."""
-        super()
-        self.t: tensor = t
-        self.c: [connection] = []
-
-    def output(self) -> tensor:
-        """Return the tensor."""
-        self.cached = False
-
-        return self.t
-
-
-class monoid(node):
-    """Monoid node is the base building block of the graph."""
-
-    @tc.typecheck
-    def __init__(self, m1: node, m2: node, op: operator.Op):
-        """Monoid: two elements and the binary operator."""
-        super()
-        self.m1: node = m1
-        self.m2: node = m2
-        self.op: operator.Op = op
-        """Forward connections."""
-        self.c: [connection] = []
-
-    def output(self) -> np.ndarray:
-        """Apply op on the inputs."""
-        self.cached = False
-
-        return self.op.forward(self.m1.output(), self.m2.output())
-
-
-@tc.typecheck
-def apply(m1: node, m2: node, op: operator.Op) -> node:
+def apply_monoid(m1: "node.node",
+                 m2: "node.node",
+                 op: operator.Op,
+                 name: str = None) -> "node.node":
     """Graph building op.
 
     This op is responsible for making the correct connections
     """
-    m = monoid(m1, m2, op)
-    m1.c.append(connection(m, op.backward_first))
-    m2.c.append(connection(m, op.backward_second))
+    m1_c = np.ones(m1.shape(), dtype=np.float32)
+    m2_c = np.ones(m2.shape(), dtype=np.float32)
+
+    init_op = op(m1_c, m2_c)
+
+    m = node.monoid(m1, m2, init_op, name=name)
+    m1.c.append(node.connection(m, init_op.backward_first))
+    m2.c.append(node.connection(m, init_op.backward_second))
+    """Add node to graph."""
+    tensorjo.tjgraph.add(m)
+
+    return m
+
+
+def apply_functor(m1: "node.node", op: operator.Op,
+                  name: str = None) -> "node.node":
+    """Graph building op.
+
+    This op is responsible for making the correct connections
+    """
+    m1_c = np.ones(m1.shape(), dtype=np.float32)
+
+    init_op = op(m1_c)
+
+    m = node.functor(m1, init_op, name=name)
+    m1.c.append(node.connection(m, init_op.backward_functor))
+    """Add node to graph."""
+    tensorjo.tjgraph.add(m)
+
     return m

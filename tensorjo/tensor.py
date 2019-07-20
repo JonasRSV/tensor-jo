@@ -1,40 +1,26 @@
 """Numpy arrays are the base arrays for the tensors."""
 import numpy as np
+import tensorjo
+from . import node
 
 
-class tensor():
-    """Tensor object to keep track of operations for a variable."""
+def tensor(v, name: str = None):
+    """Convert thing to okay tensor format."""
+    if isinstance(v, node.node):
+        return v
 
-    valid_types = [np.float16, np.float32, np.float64, np.float128]
+    try:
+        v = np.array(v, dtype=np.float32)
+    except Exception as e:
+        raise ValueError("Unable to convert %s to float array" % v)
 
-    def __init__(self, v):
-        """Initialize tensor by converting the value to a float numpy array."""
-        if type(v) == np.ndarray and v.dtype in tensor.valid_types:
-            self.v: np.ndarray = v
+    if len(v.shape) > 0 and v.shape[0] == 0:
+        raise ValueError("Empty tensor is not allowed.")
 
-        invalid_type_err = lambda s: ("Invalid tensor type %s" % s)\
-            + "Please convert it into a float or float array"
+    if np.isnan(v).any():
+        raise ValueError("Invalid tensor -- Contains NaN or None.")
 
-        if type(v) == bytes:
-            raise ValueError(invalid_type_err(v))
+    if name is None:
+        name = tensorjo.naming.get_tensor_name()
 
-        if v is None:
-            raise ValueError(invalid_type_err(v))
-
-        if hasattr(v, '__len__') and len(v) == 0:
-            raise ValueError(invalid_type_err(v))
-
-        try:
-            self.v: np.ndarray = np.array(v, dtype=np.float32)
-        except Exception as e:
-            raise ValueError(invalid_type_err(v))
-
-
-    @property
-    def shape(self):
-        """Return the shape of the tensor."""
-        return self.v.shape
-
-    def __str__(self):
-        """Show the underlying array."""
-        return str(self.v)
+    return node.primitive(v, name)

@@ -1,10 +1,10 @@
-"""This files defines the normal addition op."""
+"""This files defines the MSE op."""
 from tensorjo import op
 import numpy as np
 
 
-class addition(op.Op):
-    """This class implements the forward and backward pass for addition."""
+class mse(op.Op):
+    """This class implements the forward and backward pass for mse."""
 
     def __init__(self, m1: np.ndarray, m2: np.ndarray):
         """Initialize op."""
@@ -12,31 +12,36 @@ class addition(op.Op):
 
         self.output_shape = None
         try:
-            self.output_shape = (m1 + m2).shape
-        except ValueError as e:
+            self.output_shape = np.mean(np.square(m1 - m2), axis=1).shape
+        except (ValueError, IndexError) as e:
             raise ValueError(
-                "Failed to construct addition op with tensors %s and %s " %
+                "Failed to construct mse op with tensors %s and %s " %
                 (m1, m2) + "- %s" % e)
 
         self.m1 = m1
         self.m2 = m2
 
-        self.c = m1 + m2
+        self.c = np.mean(np.square(m1 - m2), axis=1)
 
     def forward(self, m1: np.ndarray, m2: np.ndarray) -> np.ndarray:
         """Implement the forward pass of the op."""
+        # Remember the inputs from the forward pass
+        # for the gradient calculations
         self.m1 = m1
         self.m2 = m2
-        self.c = m1 + m2
+        self.c = np.mean(np.square(m1 - m2), axis=1)
+
         return self.c
 
     def backward_first(self) -> np.ndarray:
         """Implement the backward pass of first tensor."""
-        return np.ones_like(self.m1)
+        difference = self.m1 - self.m2
+        return 2 * difference / len(difference)
 
     def backward_second(self) -> np.ndarray:
         """Implement the backward pass of second tensor."""
-        return np.ones_like(self.m2)
+        difference = self.m1 - self.m2
+        return -2 * difference / len(difference)
 
     def cache(self) -> np.ndarray:
         """Return output from previous forward pass."""
@@ -47,5 +52,5 @@ class addition(op.Op):
         return self.output_shape
 
     def name(self):
-        """Return name of addition op."""
-        return "addition"
+        """Return name of mse op."""
+        return "mse"
