@@ -49,17 +49,32 @@ def mse(m1, m2, name: str = None) -> "node.node":
     return graph.apply_monoid(m1, m2, ops.mse, name=name)
 
 
-def dot(m1, m2, name: str = None) -> "node.node":
-    """Add dot op to graph."""
-    m1 = ensure_node(m1)
-    m2 = ensure_node(m2)
-    return graph.apply_monoid(m1, m2, ops.dot, name=name)
+def mean(m, axis: int, name: str) -> "node.node":
+    """Calculate mean around axis."""
+    if type(axis) != int:
+        raise ValueError("Invalid axis type: got %s expected int" %
+                         (type(axis)))
+
+    m = ensure_node(m)
+    return graph.apply_functor(m, lambda x: ops.mean(x, axis), name=name)
 
 
 def sigmoid(m, name: str = None) -> "node.node":
     """Add sigmoid op to graph."""
     m = ensure_node(m)
     return graph.apply_functor(m, ops.sigmoid, name=name)
+
+
+def sin(m, name: str = None) -> "node.node":
+    """Add sin op to graph."""
+    m = ensure_node(m)
+    return graph.apply_functor(m, ops.sin, name=name)
+
+
+def cos(m, name: str = None) -> "node.node":
+    """Add cos op to graph."""
+    m = ensure_node(m)
+    return graph.apply_functor(m, ops.cos, name=name)
 
 
 def var(obj, name: str = None) -> "node.node":

@@ -186,28 +186,8 @@ monoids = {
             np.random.rand(5, 5)
         ],
         "correct":
-        lambda x, y: np.mean(np.square(x - y), axis=1)
+        lambda x, y: np.mean(np.square(x - y))
     },
-    "dot": {
-        "m1": [
-            np.random.rand(5, 1),
-            np.random.rand(5, 5),
-            tj.node.primitive(
-                np.random.rand(5, 1), name=tj.naming.get_tensor_name()),
-            tj.node.primitive(
-                np.random.rand(5, 5), name=tj.naming.get_tensor_name())
-        ],
-        "m2": [
-            tj.node.primitive(
-                np.random.rand(1, 5), name=tj.naming.get_tensor_name()),
-            tj.node.primitive(
-                np.random.rand(5, 5), name=tj.naming.get_tensor_name()),
-            np.random.rand(1, 5),
-            np.random.rand(5, 5)
-        ],
-        "correct":
-        lambda x, y: x @ y
-    }
 }
 
 
@@ -250,6 +230,42 @@ functors = {
         ],
         "correct":
         lambda x: np.exp(x) / (1 + np.exp(x))
+    },
+    "sin": {
+        "m": [
+            np.array(np.random.rand()),
+            np.random.rand(5),
+            np.random.rand(5, 1),
+            np.random.rand(5, 5),
+            tj.node.primitive(
+                np.array(np.random.rand()), name=tj.naming.get_tensor_name()),
+            tj.node.primitive(
+                np.random.rand(5), name=tj.naming.get_tensor_name()),
+            tj.node.primitive(
+                np.random.rand(5, 1), name=tj.naming.get_tensor_name()),
+            tj.node.primitive(
+                np.random.rand(5, 5), name=tj.naming.get_tensor_name())
+        ],
+        "correct":
+        np.sin
+    },
+    "cos": {
+        "m": [
+            np.array(np.random.rand()),
+            np.random.rand(5),
+            np.random.rand(5, 1),
+            np.random.rand(5, 5),
+            tj.node.primitive(
+                np.array(np.random.rand()), name=tj.naming.get_tensor_name()),
+            tj.node.primitive(
+                np.random.rand(5), name=tj.naming.get_tensor_name()),
+            tj.node.primitive(
+                np.random.rand(5, 1), name=tj.naming.get_tensor_name()),
+            tj.node.primitive(
+                np.random.rand(5, 5), name=tj.naming.get_tensor_name())
+        ],
+        "correct":
+        np.cos
     }
 }
 

@@ -1,4 +1,4 @@
-"""Integration test module."""
+"""optimiser test module."""
 import tensorjo as tj
 import numpy as np
 import logging
@@ -6,7 +6,7 @@ import logging
 LOGGER = logging.getLogger(__name__)
 
 
-def test_linear_regression():
+def test_gd_on_linear_regression():
     """Test making simple 1d linear regression and train it."""
     x = np.arange(0, 10)
 
@@ -26,11 +26,10 @@ def test_linear_regression():
     LOGGER.info("before training: coefficient %s -- bias: %s -- mse: %s" %
                 (a, b, err.output()))
 
-    for i in range(1200):
-        g = tj.gradients(err, [a, b])
+    opt = tj.opt.gd(err)
+    opt.rounds = 1200
 
-        a.update(a.v - np.mean(g[0]) * 1e-2)
-        b.update(b.v - np.mean(g[1]) * 1e-2)
+    opt.minimise([a, b])
 
     LOGGER.info("after training: coefficient %s -- bias: %s -- mse: %s" %
                 (a, b, err.output()))
@@ -41,7 +40,7 @@ def sigmoid(x):
     return 1 / (1 + np.exp(-x))
 
 
-def test_logistic_regression():
+def test_gd_on_logistic_regression():
     """Test making simple 1d linear regression and train it."""
     x = np.random.rand(10) - 0.5
     y = sigmoid(4 * x - 1)
@@ -59,11 +58,11 @@ def test_logistic_regression():
     LOGGER.info("before training: coefficient %s -- bias: %s -- mse: %s" %
                 (a, b, err.output()))
 
-    for i in range(5000):
-        g = tj.gradients(err, [a, b])
+    opt = tj.opt.gd(err)
+    opt.dt = 1e-0
+    opt.rounds = 5000
 
-        a.update(a.v - np.mean(g[0]) * 1e-0)
-        b.update(b.v - np.mean(g[1]) * 1e-0)
+    opt.minimise([a, b])
 
     LOGGER.info("after training: coefficient %s -- bias: %s -- mse: %s" %
                 (a, b, err.output()))

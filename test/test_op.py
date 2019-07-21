@@ -7,23 +7,6 @@ LOGGER = logging.getLogger(__name__)
 
 ok_numerical_error = 1e-6
 
-
-def matrix_AB_dA(A, B):
-    """Matrix derivative."""
-    grad = np.ones_like(A)
-    for i in range(A.shape[1]):
-        grad[:, i] = np.sum(B[i, :])
-    return grad
-
-
-def matrix_AB_dB(A, B):
-    """Matrix derivative."""
-    grad = np.ones_like(B)
-    for i in range(B.shape[0]):
-        grad[i, :] = np.sum(A[:, i])
-    return grad
-
-
 tensors = {
     "1d": {
         "m1": list(map(np.array, [1, -1, 0.1, 1.0, 10, 100, -100, 0])),
@@ -74,18 +57,16 @@ tensors = {
     "invalid_mse": {
         "m1":
         list(
-            map(np.array, [
-                np.ones((10, 10)),
-                np.ones((10, 11)),
-                np.random.rand(3, 4), 1.0
-            ])),
+            map(np.array,
+                [np.ones((10, 10)),
+                 np.ones((10, 11)),
+                 np.random.rand(3, 4)])),
         "m2":
         list(
-            map(np.array, [
-                np.ones((11, 10)),
-                np.ones((11, 10)),
-                np.random.rand(4, 4), 1.0
-            ]))
+            map(np.array,
+                [np.ones((11, 10)),
+                 np.ones((11, 10)),
+                 np.random.rand(4, 4)]))
     },
     "derivative_mse": {
         "m1":
@@ -103,44 +84,6 @@ tensors = {
                 np.zeros((10, 10)),
                 np.ones((10, 1)) * 10,
                 np.ones((20, 3)) * 3
-            ]))
-    },
-    "valid_dot": {
-        "m1":
-        list(
-            map(np.array, [
-                np.ones((5, 5)),
-                np.ones((5, 5)),
-                np.ones((5, 2)),
-                np.ones((2, 5)),
-                np.ones((5, 2)),
-                np.ones((5, 1))
-            ])),
-        "m2":
-        list(
-            map(np.array, [
-                np.ones((5, 5)),
-                np.zeros((5, 1)),
-                np.ones((2, 5)),
-                np.ones((5, 5)),
-                np.ones((2, 10)),
-                np.ones((1, 5))
-            ]))
-    },
-    "invalid_dot": {
-        "m1":
-        list(
-            map(np.array, [
-                np.ones((10, 10)),
-                np.ones((10, 1)),
-                np.ones((5, 2)),
-            ])),
-        "m2":
-        list(
-            map(np.array, [
-                np.ones((5, 5)),
-                np.zeros((10, 5)),
-                np.ones((5, 2)) * 10,
             ]))
     },
     "functors": {
@@ -414,7 +357,7 @@ def test_mse():
         for m1, m2 in zip(_d["m1"], _d["m2"]):
             mse_op = tj.ops.mse(m1, m2)
             mse_op_res = mse_op.forward(m1, m2)
-            assert _true(abs(mse_op_res - np.mean(np.square(m1 - m2), axis=1))
+            assert _true(abs(mse_op_res - np.mean(np.square(m1 - m2)))
                          < ok_numerical_error),\
                 "Forward mse gave wrong result: mse(%s, %s) != %s"\
                 % (m1, m2, mse_op_res)
@@ -443,13 +386,13 @@ def test_mse():
         mse_op = tj.ops.mse(m1, m2)
         first_deriv = mse_op.backward_first()
         diff = m1 - m2
-        assert _true(abs(first_deriv - (2 * diff / len(diff)))
+        assert _true(abs(first_deriv - (2 * diff))
                      < ok_numerical_error),\
             "derivative of mse(%s, %s) with respect to the first is not %s" \
             % (m1, m2, first_deriv)
 
         second_deriv = mse_op.backward_second()
-        assert _true(abs(second_deriv - (-2 * diff / len(diff)))
+        assert _true(abs(second_deriv - (-2 * diff))
                      < ok_numerical_error),\
             "derivative of mse(%s, %s) with respect to the second is not %s" \
             % (m1, m2, second_deriv)
@@ -463,79 +406,18 @@ def test_mse():
             mse_op = tj.ops.mse(m1, m2)
             mse_op_shape = mse_op.shape()
             assert _true(mse_op_shape ==
-                         (np.mean(np.square(m1 - m2), axis=1)).shape),\
+                         (np.mean(np.square(m1 - m2))).shape),\
                 "Shape mse_op gave wrong result: mse(%s, %s) != %s"\
                 % (m1.shape, m2.shape, mse_op_shape)
 
 
-def test_dot():
-    """Test the dot Op."""
-    LOGGER.info("Testing valid dot ops.")
-
-    for tensor in ["valid_dot"]:
-        _d = tensors[tensor]
-
-        for m1, m2 in zip(_d["m1"], _d["m2"]):
-            dot_op = tj.ops.dot(m1, m2)
-            dot_op_res = dot_op.forward(m1, m2)
-            assert _true(abs(dot_op_res - (m1 @ m2))
-                         < ok_numerical_error),\
-                "Forward dot gave wrong result: dot(%s, %s) != %s"\
-                % (m1, m2, dot_op_res)
-
-    LOGGER.info("Testing invalid dot ops.")
-
-    _d = tensors["invalid_dot"]
-
-    for m1, m2 in zip(_d["m1"], _d["m2"]):
-
-        exception = None
-        try:
-            tj.ops.dot(m1, m2)
-        except ValueError as e:
-            exception = e
-
-        assert isinstance(exception, ValueError),\
-            "An exception should have been thrown %s & %s cannot be dot"\
-            % (m1.shape, m2.shape)
-
-    LOGGER.info("Testing derivative of dot ops.")
-
-    _d = tensors["valid_dot"]
-
-    for m1, m2 in zip(_d["m1"], _d["m2"]):
-        dot_op = tj.ops.dot(m1, m2)
-        first_deriv = dot_op.backward_first()
-        assert _true(abs(first_deriv - matrix_AB_dA(m1, m2))
-                     < ok_numerical_error),\
-            "derivative of dot(%s, %s) with respect to the first is not %s" \
-            % (m1, m2, first_deriv)
-
-        second_deriv = dot_op.backward_second()
-        assert _true(abs(second_deriv - matrix_AB_dB(m1, m2))
-                     < ok_numerical_error),\
-            "derivative of dot(%s, %s) with respect to the second is not %s" \
-            % (m1, m2, second_deriv)
-
-    LOGGER.info("Testing shape of dot ops.")
-
-    for tensor in ["2d"]:
-        _d = tensors[tensor]
-
-        for m1, m2 in zip(_d["m1"], _d["m2"]):
-            dot_op = tj.ops.dot(m1, m2)
-            dot_op_shape = dot_op.shape()
-            assert _true(dot_op_shape ==
-                         (m1 @ m2).shape),\
-                "Shape dot_op gave wrong result: dot(%s, %s) != %s"\
-                % (m1.shape, m2.shape, dot_op_shape)
-
-
 def test_functors():
-    """Test the dot Op."""
+    """Test the functors Op."""
     LOGGER.info("Testing valid functors.")
 
-    functors = [("sigmoid", lambda x: np.exp(x) / (1 + np.exp(x)))]
+    functors = [("sigmoid", lambda x: np.exp(x) / (1 + np.exp(x))),
+                ("sin", np.sin), ("cos", np.cos)]
+
     domain = tensors["functors"]["m"]
 
     for f, correct in functors:
@@ -551,7 +433,8 @@ def test_functors():
     def sigmoid(x):
         return np.exp(x) / (1 + np.exp(x))
 
-    functors = [("sigmoid", lambda x: sigmoid(x) * (1 - sigmoid(x)))]
+    functors = [("sigmoid", lambda x: sigmoid(x) * (1 - sigmoid(x))),
+                ("sin", np.cos), ("cos", lambda x: -np.sin(x))]
 
     LOGGER.info("Testing derivative of functor ops.")
     for f, correct in functors:
@@ -565,7 +448,8 @@ def test_functors():
                 % (f, f, f_op_res, correct(d))
 
     LOGGER.info("Testing shape of functor ops.")
-    functors = [("sigmoid", lambda x: sigmoid(x))]
+    functors = [("sigmoid", lambda x: sigmoid(x)), ("sin", np.sin), ("cos",
+                                                                     np.cos)]
 
     for f, correct in functors:
         LOGGER.info("    Testing: %s" % f)

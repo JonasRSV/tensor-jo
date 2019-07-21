@@ -12,7 +12,7 @@ class mse(op.Op):
 
         self.output_shape = None
         try:
-            self.output_shape = np.mean(np.square(m1 - m2), axis=1).shape
+            self.output_shape = np.mean(np.square(m1 - m2)).shape
         except (ValueError, IndexError) as e:
             raise ValueError(
                 "Failed to construct mse op with tensors %s and %s " %
@@ -21,7 +21,7 @@ class mse(op.Op):
         self.m1 = m1
         self.m2 = m2
 
-        self.c = np.mean(np.square(m1 - m2), axis=1)
+        self.c = np.mean(np.square(m1 - m2))
 
     def forward(self, m1: np.ndarray, m2: np.ndarray) -> np.ndarray:
         """Implement the forward pass of the op."""
@@ -29,19 +29,19 @@ class mse(op.Op):
         # for the gradient calculations
         self.m1 = m1
         self.m2 = m2
-        self.c = np.mean(np.square(m1 - m2), axis=1)
+        self.c = np.mean(np.square(m1 - m2))
 
         return self.c
 
     def backward_first(self) -> np.ndarray:
         """Implement the backward pass of first tensor."""
         difference = self.m1 - self.m2
-        return 2 * difference / len(difference)
+        return 2 * difference
 
     def backward_second(self) -> np.ndarray:
         """Implement the backward pass of second tensor."""
         difference = self.m1 - self.m2
-        return -2 * difference / len(difference)
+        return -2 * difference
 
     def cache(self) -> np.ndarray:
         """Return output from previous forward pass."""
