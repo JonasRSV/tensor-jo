@@ -3,11 +3,17 @@ from . import tensor as tensor_base
 from . import naming
 from . import math
 from . import graph
+from . import node
 
 from tensorjo import ops
 from tensorjo import opt
 
 tensor = tensor_base.tensor
+
+monoid = node.monoid
+functor = node.functor
+primitive = node.primitive
+
 
 ops = ops
 opt = opt

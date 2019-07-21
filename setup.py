@@ -8,7 +8,7 @@ setuptools.setup(
     description="A tiny tensor library made for differentiable things",
     url="",
     packages=setuptools.find_packages(exclude=[]),
-    install_requires=["numpy==1.16.4"],
+    install_requires=["numpy==1.16.4", "networkx==2.1", "plotly==4.0.0"],
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
