@@ -42,6 +42,9 @@ It uses plotly and networkx under the hood making the plot interactive.
 The size of a dot indicates its magnitude and hovering on them will provide more information such as their type amongst other things.
 
 
+## Content
+---
+
 - [Installation](#installation)
 - [Test](#test)
 - [Examples](#examples)
