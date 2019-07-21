@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.com/JonasRSV/tensor-jo.svg?branch=master)](https://travis-ci.com/JonasRSV/tensor-jo)
+
 # tensor-jo
 
 ---
