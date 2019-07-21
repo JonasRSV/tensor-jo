@@ -5,12 +5,22 @@
 A tiny tensor library written in python
 
 ## Installation
+---
 
 ```bash
 > git clone https://github.com/JonasRSV/tensor-jo.git
 > cd tensor-jo
 > python3 setup.py install
 ```
+
+
+## Test
+---
+
+```bash
+> pytest .
+```
+
 
 ## Examples
 
