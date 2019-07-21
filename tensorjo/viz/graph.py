@@ -5,7 +5,7 @@ import tensorjo as tj
 import numpy as np
 
 
-class vizualizer():
+class visualizer():
     """Keeps visualization state."""
 
     def __init__(self,

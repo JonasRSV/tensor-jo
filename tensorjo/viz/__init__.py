@@ -1,3 +1,3 @@
 from . import graph
 
-vizualizer = graph.vizualizer
+visualizer = graph.visualizer

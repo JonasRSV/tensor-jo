@@ -8,6 +8,36 @@ A tiny tensor library written in python
 
 This library is made for sparse computation! 
 
+![calcgraph](images/calc_graph.png)
+
+The image above is produced with the following code
+
+```python3
+from tensorjo import viz
+import tensorjo as tj
+import numpy as np
+
+a = tj.var(np.random.rand())
+b = tj.var(np.random.rand())
+c = tj.var(np.random.rand())
+
+d = a + b + c
+d = d + 5
+d = d + 5
+d = d + 5
+d = d * d
+d = tj.sigmoid(d)
+d = tj.sin(d)
+d = 5 + d
+d = tj.cos(d)
+d = d * 10 + 400
+
+v = viz.visualizer(tj.tjgraph)
+
+v.draw(d)
+```
+
+
 - [Installation](#installation)
 - [Test](#test)
 - [Examples](#examples)
