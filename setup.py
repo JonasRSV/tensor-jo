@@ -8,7 +8,7 @@ setuptools.setup(
     description="A tiny tensor library made for differentiable things",
     url="",
     packages=setuptools.find_packages(exclude=[]),
-    install_requires=["numpy==1.16.4", "numba==0.44.1"],
+    install_requires=["numpy==1.16.4"],
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
