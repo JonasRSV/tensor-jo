@@ -8,7 +8,7 @@ A tiny tensor library written in python
 
 This library is made for sparse computation! 
 
-![calcgraph](images/calc_graph.png)
+![calcgraph](images/cgraph.png)
 
 The image above is produced with the following code
 
