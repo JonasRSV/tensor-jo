@@ -6,6 +6,9 @@
 
 A tiny tensor library written in python
 
+This library is made for sparse computation! 
+
+
 ## Installation
 ---
 
