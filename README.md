@@ -8,6 +8,13 @@ A tiny tensor library written in python
 
 This library is made for sparse computation! 
 
+- [Installation](#installation)
+- [Test](#test)
+- [Examples](#examples)
+  - [Linear Regression](#linear-regression)
+  - [Logistic Regression](#logistic-regression)
+  - [Cache](#cache)
+
 
 ## Installation
 ---
@@ -135,4 +142,75 @@ opt.minimise([a, b])
 
 print("after training: coefficient %s -- bias: %s -- mse: %s" % (a, b,
                                                                  err.output()))
+```
+
+### Cache
+
+---
+
+```python3
+import tensorjo as tj
+import numpy as np
+import time
+import sys
+
+print("Testing if cache makes a difference performance wise.")
+"""Make a loong graph."""
+a = tj.var(np.random.rand())
+b = tj.var(np.random.rand())
+
+sys.setrecursionlimit(5000)
+
+timestamp = time.time()
+c = a + b
+for _ in range(2000):
+    c = a + b + c
+
+print("Making graph with %s ops took %s seconds" % (3 * 2000,
+                                                    time.time() - timestamp))
+
+iters = 200
+
+timestamp = time.time()
+for _ in range(iters):
+    c.output()
+
+print("Running %s iters without cache took %s seconds" %
+      (iters, time.time() - timestamp))
+
+timestamp = time.time()
+tj.tjgraph.cache()
+
+print("Cacheing graph took %s seconds" % (time.time() - timestamp))
+
+timestamp = time.time()
+for _ in range(iters):
+    c.output()
+
+print("Running %s iters with cache took %s seconds" %
+      (iters, time.time() - timestamp))
+
+# Since the entire graph is dependant on
+# a this will probably be slower than running
+# updates without cache.
+
+# But if you are training for example "part of a graph"
+# this can potentially give massive speedups! :)
+timestamp = time.time()
+for _ in range(iters):
+    a.update(np.random.rand())
+    c.output()
+
+print("Running %s iters with cache and update took %s seconds" %
+      (iters, time.time() - timestamp))
+
+tj.tjgraph.no_cache()
+
+timestamp = time.time()
+for _ in range(iters):
+    a.update(np.random.rand())
+    c.output()
+
+print("Running %s iters with no cache and update took %s seconds" %
+      (iters, time.time() - timestamp))
 ```
