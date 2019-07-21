@@ -24,7 +24,9 @@ class node():
         """
         self.name = name
         self.gradient = None
-        self.cached = False
+        self.gradient_cached = False
+        self.output_cached = False
+        self.output_cache = None
 
     @abstractmethod
     def output(self) -> np.ndarray:
@@ -61,7 +63,7 @@ class node():
         if self == n:
             return np.array(1, dtype=np.float32)
 
-        if self.cached:
+        if self.gradient_cached:
             return self.gradient
 
         self.gradient = np.zeros(self.shape())
@@ -72,7 +74,7 @@ class node():
             # This might be the most important line of all in this program
             self.gradient = self.gradient + (con_wrt_n * self_wrt_con)
 
-        self.cached = True
+        self.gradient_cached = True
         return self.gradient
 
     def __add__(self, other):
@@ -145,10 +147,29 @@ class primitive(node):
         super().__init__(name)
         self.v: np.ndarray = v
         self.c: [connection] = []
+        """Initially nodes are not cached unless a user calls cache on the graph.
+
+        So that things can become pre-computed.
+        (e.g calculation paths and so on)
+        """
+        self.update = self._no_cache_update
+        """The all nodes depending on this node.
+
+        All nodes in the calculation dependencies needs to have their cache
+        emptied if this node is altered.
+
+        The calculation path will be updated by the graph object whenever
+        a user calls to initialize the cache. The graph object will also
+        overload the output function of this object with its "_output_cache"
+
+        The graph object is also responsible for reverting the cache if the
+        user asks for it.
+        """
+        self.calculation_dependencies = []
 
     def output(self) -> np.ndarray:
         """Return the np.ndarray."""
-        self.cached = False
+        self.gradient_cached = False
 
         return self.v
 
@@ -156,8 +177,10 @@ class primitive(node):
         """Return shape of primitive np.ndarray."""
         return self.v.shape
 
-    def update(self, v) -> node:
+    def _no_cache_update(self, v) -> node:
         """Update the underlying array."""
+        v = np.array(v, dtype=np.float32)
+
         if self.v.shape != v.shape:
             raise ValueError("Cannot update tensor of shape %s with shape %s" %
                              (self.v.shape, v.shape))
@@ -165,6 +188,25 @@ class primitive(node):
         self.v = v
 
         return self
+
+    def _cache_update(self, v) -> node:
+        """Update the underlying array."""
+        v = np.array(v, dtype=np.float32)
+
+        if self.v.shape != v.shape:
+            raise ValueError("Cannot update tensor of shape %s with shape %s" %
+                             (self.v.shape, v.shape))
+
+        self.v = v
+        """Empty all caches."""
+        for node in self.calculation_dependencies:
+            node.output_cached = False
+
+        return self
+
+    def update(self) -> np.ndarray:
+        """One of "_cache_update or _no_cache_update"."""
+        raise NotImplementedError("update not implemented for primitive.")
 
     def __str__(self):
         """Return string rep of underlying array."""
@@ -186,12 +228,34 @@ class monoid(node):
         self.op: operator.Op = op
         """Forward connections."""
         self.c: [connection] = []
+        """Initially nodes are not cached unless a user calls cache on the graph.
 
-    def output(self) -> np.ndarray:
+        So that things can become pre-computed.
+        (e.g calculation paths and so on)
+        """
+        self.output = self._output_no_cache
+
+    def _output_no_cache(self) -> np.ndarray:
         """Apply op on the inputs."""
-        self.cached = False
+        self.gradient_cached = False
 
         return self.op.forward(self.m1.output(), self.m2.output())
+
+    def _output_cache(self) -> np.ndarray:
+        """Apply op on inputs if output is not cached."""
+        self.gradient_cached = False
+
+        if self.output_cached:
+            return self.output_cache
+
+        self.output_cached = True
+        self.output_cache = self.op.forward(self.m1.output(), self.m2.output())
+
+        return self.output_cache
+
+    def output(self) -> np.ndarray:
+        """One of "output_no_cache or _output_cache"."""
+        raise NotImplementedError("output not implemented for monoid.")
 
     def shape(self) -> tuple:
         """Return shape of monoid operator output."""
@@ -212,12 +276,34 @@ class functor(node):
         self.op: operator.Op = op
         """Forward connections."""
         self.c: [connection] = []
+        """Initially nodes are not cached unless a user calls cache on the graph.
 
-    def output(self) -> np.ndarray:
+        So that things can become pre-computed.
+        (e.g calculation paths and so on)
+        """
+        self.output = self._output_no_cache
+
+    def _output_no_cache(self) -> np.ndarray:
         """Apply op on the inputs."""
-        self.cached = False
+        self.gradient_cached = False
 
         return self.op.forward(self.m1.output())
+
+    def _output_cache(self) -> np.ndarray:
+        """Apply op on inputs if output is not cached."""
+        self.gradient_cached = False
+
+        if self.output_cached:
+            return self.output_cache
+
+        self.output_cached = True
+        self.output_cache = self.op.forward(self.m1.output())
+
+        return self.output_cache
+
+    def output(self) -> np.ndarray:
+        """One of "output_no_cache or _output_cache"."""
+        raise NotImplementedError("output not implemented for functor.")
 
     def shape(self) -> tuple:
         """Return shape of monoid operator output."""

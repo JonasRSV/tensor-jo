@@ -1,4 +1,10 @@
-"""This module defines the graph."""
+"""This module defines the graph.
+
+The graph keeps track of all the nodes and are responsible
+for fetching variables and controlling the cache.
+
+The graph is also responsible for adding stuff.
+"""
 import tensorjo
 from . import op as operator
 from . import node
@@ -68,6 +74,56 @@ class graph():
         """Clear the entire graph."""
         self.nodes = {}
         self.variables = {}
+
+    def cache(self):
+        """Make computations cached in graph.
+
+        This requires a bit of precomputation and is therefore
+        not on by default.
+
+        If the user adds ops after calling cache then cache needs
+        to be called again.
+        """
+        for n in self.nodes.values():
+            if isinstance(n, node.primitive):
+                n.calculation_dependencies = get_calculation_dependencies(n)
+                n.update = n._cache_update
+            else:
+                n.output = n._output_cache
+
+    def no_cache(self):
+        """Make computations uncached."""
+        for n in self.nodes.values():
+            if isinstance(n, node.primitive):
+                n.update = n._no_cache_update
+            else:
+                n.output = n._output_no_cache
+
+
+"""Define some graph utilities."""
+
+
+def get_calculation_dependencies(node: "node.node") -> ["node.node"]:
+    """Get the calculation dependencies of a node.
+
+    All nodes whos output depends on the output of this node.
+
+    There can be circles so need to be ware of them.
+    """
+    mem = set()
+
+    def dfs(n: "node.node"):
+        """DFS the graph to find all connected nodes."""
+        if n in mem:
+            return
+
+        mem.add(n)
+
+        for c in n.c:
+            dfs(c.t)
+
+    dfs(node)
+    return list(mem)
 
 
 def apply_monoid(m1: "node.node",

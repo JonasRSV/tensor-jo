@@ -2,6 +2,8 @@
 import tensorjo as tj
 import numpy as np
 import logging
+import time
+import sys
 
 LOGGER = logging.getLogger(__name__)
 
@@ -227,3 +229,135 @@ def test_adding_functors():
     LOGGER.info("Testing clearing")
     assert len(nodes) == 0, "Nodes should be 0 is %s" % len(nodes)
     assert len(vars) == 0, "Vars should be 0 is %s" % len(vars)
+
+
+def sigmoid(x):
+    """Sigmoid function."""
+    return 1 / (1 + np.exp(-x))
+
+
+def test_cache():
+    """Test the cache functionality of the graph."""
+    LOGGER.info("Testing cache.")
+
+    LOGGER.info("Running logistic regression test.")
+
+    x = np.random.rand(10) - 0.5
+    y = sigmoid(4 * x - 1)
+
+    a = tj.var(np.random.rand())
+    b = tj.var(np.random.rand())
+
+    o = tj.sigmoid(a * x + b)
+    err = tj.mse(y, o)
+
+    LOGGER.info("Optimizing a simple logistic regression.")
+    LOGGER.info(" X domain is (10, 2)")
+    LOGGER.info(" Y domain is (10, 1)")
+
+    LOGGER.info("before training: coefficient %s -- bias: %s -- mse: %s" %
+                (a, b, err.output()))
+
+    opt = tj.opt.gd(err)
+    opt.dt = 1e-0
+    opt.rounds = 5000
+
+    opt.minimise([a, b])
+
+    LOGGER.info("after training: coefficient %s -- bias: %s -- mse: %s" %
+                (a, b, err.output()))
+    """ ------------ """
+
+    LOGGER.info("Enabling cache and running the same calculations.")
+
+    tj.tjgraph.cache()
+
+    a.update(np.random.rand())
+    b.update(np.random.rand())
+
+    LOGGER.info("before training: coefficient %s -- bias: %s -- mse: %s" %
+                (a, b, err.output()))
+
+    opt = tj.opt.gd(err)
+    opt.dt = 1e-0
+    opt.rounds = 5000
+
+    opt.minimise([a, b])
+
+    LOGGER.info("after training: coefficient %s -- bias: %s -- mse: %s" %
+                (a, b, err.output()))
+    """ ------------ """
+
+    LOGGER.info("Disableing cache and running the same calculations.")
+
+    tj.tjgraph.no_cache()
+
+    a.update(np.random.rand())
+    b.update(np.random.rand())
+
+    LOGGER.info("before training: coefficient %s -- bias: %s -- mse: %s" %
+                (a, b, err.output()))
+
+    opt = tj.opt.gd(err)
+    opt.dt = 1e-0
+    opt.rounds = 5000
+
+    opt.minimise([a, b])
+
+    LOGGER.info("after training: coefficient %s -- bias: %s -- mse: %s" %
+                (a, b, err.output()))
+    """ ------------ """
+
+    LOGGER.info("Testing if cache makes a difference performance wise.")
+    """Make a loong graph."""
+    a = tj.var(np.random.rand())
+    b = tj.var(np.random.rand())
+
+    sys.setrecursionlimit(5000)
+
+    timestamp = time.time()
+    c = a + b
+    for _ in range(2000):
+        c = a + b + c
+
+    LOGGER.info("Making graph with %s ops took %s seconds" %
+                (3 * 2000, time.time() - timestamp))
+
+    iters = 200
+
+    timestamp = time.time()
+    for _ in range(iters):
+        c.output()
+
+    LOGGER.info("Running %s iters without cache took %s seconds" %
+                (iters, time.time() - timestamp))
+
+    timestamp = time.time()
+    tj.tjgraph.cache()
+
+    LOGGER.info("Cacheing graph took %s seconds" % (time.time() - timestamp))
+
+    timestamp = time.time()
+    for _ in range(iters):
+        c.output()
+
+    LOGGER.info("Running %s iters with cache took %s seconds" %
+                (iters, time.time() - timestamp))
+
+    timestamp = time.time()
+    for _ in range(iters):
+        a.update(np.random.rand())
+        c.output()
+
+    LOGGER.info("Running %s iters with cache and update took %s seconds" %
+                (iters, time.time() - timestamp))
+
+    tj.tjgraph.no_cache()
+
+    timestamp = time.time()
+    for _ in range(iters):
+        a.update(np.random.rand())
+        c.output()
+
+    LOGGER.info("Running %s iters with no cache and update took %s seconds" %
+                (iters, time.time() - timestamp))
