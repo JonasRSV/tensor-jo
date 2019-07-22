@@ -1,45 +1,10 @@
 [![Build Status](https://travis-ci.com/JonasRSV/tensor-jo.svg?branch=master)](https://travis-ci.com/JonasRSV/tensor-jo)
 
-# tensor-jo
+![logo](images/logo.png)
 
 ---
 
 A tiny tensor library written in python
-
-This library is made for sparse computation! 
-
-![calcgraph](images/cgraph.png)
-
-The image above is produced with the following code
-
-```python3
-from tensorjo import viz
-import tensorjo as tj
-import numpy as np
-
-a = tj.var(np.random.rand())
-b = tj.var(np.random.rand())
-c = tj.var(np.random.rand())
-
-d = a + b + c
-d = d + 5
-d = d + 5
-d = d + 5
-d = d * d
-d = tj.sigmoid(d)
-d = tj.sin(d)
-d = 5 + d
-d = tj.cos(d)
-d = d * 10 + 400
-
-v = viz.visualizer(tj.tjgraph)
-
-v.draw(d)
-```
-
-It uses plotly and networkx under the hood making the plot interactive.
-
-The size of a dot indicates its magnitude and hovering on them will provide more information such as their type amongst other things.
 
 
 ## Content
@@ -51,7 +16,31 @@ The size of a dot indicates its magnitude and hovering on them will provide more
   - [Linear Regression](#linear-regression)
   - [Logistic Regression](#logistic-regression)
   - [Cache](#cache)
+  - [Visualization](#visualization)
 
+## Functionality
+---
+
+#### What can be done
+
+* Build graph of calculations
+* Differentiate with regards to anything
+* Visualize graph and node input / outputs
+* Cache outputs in a graph (This needs to be turned on - see cache example)
+* Cache gradients in the graph (This is always on)
+
+#### Limitations
+
+***Graph does not support matrix multiplication***. This is because it does not nicely with the implementation of the chain rule. The problem is that matrix multiplication in R^3 results in a tensor in R^4 when differentiated. This would not be a problem by using a different way of calculating the chain rule, but i rather like this one so it is not supported.
+
+***Graph size is limited by python stack size*** since forward and backward passes is done recursivley: graphs that exceed the stack size will hit the recursion limit. This can be ammended somewhat using 
+
+```python3
+import sys
+sys.setrecursionlimit(A-NUMBER-HERE)
+```
+
+But this is only necessary with very deep graphs.
 
 ## Installation
 ---
@@ -250,4 +239,40 @@ for _ in range(iters):
 
 print("Running %s iters with no cache and update took %s seconds" %
       (iters, time.time() - timestamp))
+```
+
+## Visualization
+
+---
+
+The computational graph can be visualized. Plotly is used under the hood so the plots
+is interactive.
+
+![calcgraph](images/cgraph.png)
+
+The image above is produced with the following code
+
+```python3
+from tensorjo import viz
+import tensorjo as tj
+import numpy as np
+
+a = tj.var(np.random.rand())
+b = tj.var(np.random.rand())
+c = tj.var(np.random.rand())
+
+d = a + b + c
+d = d + 5
+d = d + 5
+d = d + 5
+d = d * d
+d = tj.sigmoid(d)
+d = tj.sin(d)
+d = 5 + d
+d = tj.cos(d)
+d = d * 10 + 400
+
+v = viz.visualizer(tj.tjgraph)
+
+v.draw(d)
 ```
