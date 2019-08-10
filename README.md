@@ -18,29 +18,29 @@ A tiny tensor library written in python
   - [Cache](#cache)
   - [Visualization](#visualization)
 
-## Functionality
+## What is this?
 ---
 
-#### What can be done
+An implementation of a computational graph that support differentiating everything. Specific functionality includes
 
-* Build graph of calculations
-* Differentiate with regards to anything
-* Visualize graph and node input / outputs
-* Cache outputs in a graph (This needs to be turned on - see cache example)
-* Cache gradients in the graph (This is always on)
+* Cache'ing of forward propagations in the graph
+* Cache'ing of gradient computations in the graph
+* Visualization of the graph
+* Dynamically adding and removing entities in the graph
 
-#### Limitations
+Please see the Examples section for examples
 
-***Graph does not support matrix multiplication***. This is because it does not nicely with the implementation of the chain rule. The problem is that matrix multiplication in R^3 results in a tensor in R^4 when differentiated. This would not be a problem by using a different way of calculating the chain rule, but i rather like this one so it is not supported.
+## What it is not
 
-***Graph size is limited by python stack size*** since forward and backward passes is done recursivley: graphs that exceed the stack size will hit the recursion limit. This can be ammended somewhat using 
+This is not a library for making huge computational graphs. Because of the nature of the implementation of the graph it is limited by the stack size. In python the stack size can be increased as follows:
 
 ```python3
 import sys
 sys.setrecursionlimit(A-NUMBER-HERE)
 ```
 
-But this is only necessary with very deep graphs.
+But either way this should not be used for large graphs.
+
 
 ## Installation
 ---
@@ -111,6 +111,15 @@ print("after training: coefficient %s -- bias: %s -- mse: %s" % (a, b,
                                                                  err.output()))
 ```
 
+output
+
+```bash
+before training: coefficient 0.59156036 -- bias: 0.27047655 -- mse: 44.50837
+after training: coefficient 1.0008107 -- bias: 4.994916 -- mse: 7.4838827e-06
+before training: coefficient 0.10065077 -- bias: 0.08387766 -- mse: 7.4838827e-06
+after training: coefficient 1.0008298 -- bias: 4.9947963 -- mse: 7.839944e-06<Plug>_
+```
+
 ### Logistic Regression
 
 ---
@@ -168,6 +177,15 @@ opt.minimise([a, b])
 
 print("after training: coefficient %s -- bias: %s -- mse: %s" % (a, b,
                                                                  err.output()))
+```
+
+output
+
+```bash
+before training: coefficient 0.8239656 -- bias: 0.9479227 -- mse: 0.24330702
+after training: coefficient 3.9844732 -- bias: -1.0001798 -- mse: 1.2030186e-07
+before training: coefficient 0.81145114 -- bias: 0.68252563 -- mse: 0.19009504
+after training: coefficient 3.984306 -- bias: -1.0001817 -- mse: 1.229045e-07
 ```
 
 ### Cache
@@ -241,6 +259,18 @@ print("Running %s iters with no cache and update took %s seconds" %
       (iters, time.time() - timestamp))
 ```
 
+output
+```bash
+Testing if cache makes a difference performance wise.
+Making graph with 6000 ops took 0.07345104217529297 seconds
+Running 200 iters without cache took 1.0803160667419434 seconds
+Cacheing graph took 0.007400035858154297 seconds
+Running 200 iters with cache took 0.007011890411376953 seconds
+Running 200 iters with cache and update took 1.3192110061645508 seconds
+Running 200 iters with no cache and update took 1.0495119094848633 seconds
+```
+
+
 ## Visualization
 
 ---
@@ -248,9 +278,6 @@ print("Running %s iters with no cache and update took %s seconds" %
 The computational graph can be visualized. Plotly is used under the hood so the plots
 is interactive.
 
-![calcgraph](images/cgraph.png)
-
-The image above is produced with the following code
 
 ```python3
 from tensorjo import viz
@@ -276,3 +303,5 @@ v = viz.visualizer(tj.tjgraph)
 
 v.draw(d)
 ```
+
+![calcgraph](images/cgraph.png)

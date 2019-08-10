@@ -32,6 +32,10 @@ class visualizer():
         node_x = node_x
         node_y = node_y
 
+        fig = go.Figure(
+            layout=go.Layout(
+                paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)'))
+        """Make edge trace."""
         edge_trace = go.Scatter(
             x=edge_x,
             y=edge_y,
@@ -40,55 +44,95 @@ class visualizer():
             mode='lines',
             name="Edges")
 
-        color = []
-        text = []
-        sizes = []
-        for n in graph.nodes:
+        fig.add_trace(edge_trace)
+        """Make node traces."""
+
+        nodes = {
+            n: {
+                "node_x": [],
+                "node_y": [],
+                "color": [],
+                "text": [],
+                "size": []
+            }
+            for n in ['primitive', 'functor', 'monoid', "output"]
+        }
+
+        for i, n in enumerate(graph.nodes):
             o = n.output()
 
             t = None
+            c = None
             if isinstance(n, tj.primitive):
-                color.append("black")
+                c = "black"
                 t = "primitive"
 
             if isinstance(n, tj.functor):
-                color.append("purple")
+                c = "purple"
                 t = "functor"
 
             if isinstance(n, tj.monoid):
-                color.append("red")
+                c = "red"
                 t = "monoid"
 
+            text = "name: %s --- output: %s --- type: %s" % (n.name, o, t)
+
             if n == master:
-                color[-1] = "green"
+                nodes["output"]["node_x"].append(node_x[i])
+                nodes["output"]["node_y"].append(node_y[i])
+                nodes["output"]["color"].append("green")
+                nodes["output"]["text"].append(text)
+                nodes["output"]["size"].append(o)
+            else:
+                nodes[t]["node_x"].append(node_x[i])
+                nodes[t]["node_y"].append(node_y[i])
+                nodes[t]['color'].append(c)
+                nodes[t]['text'].append(text)
+                nodes[t]['size'].append(o)
 
-            text.append("name: %s --- output: %s --- type: %s" % (n.name, o,
-                                                                  t))
-
-            sizes.append(o)
+        # Normalize sizes
+        sizes = []
+        for k in nodes.keys():
+            sizes.extend(nodes[k]["size"])
 
         sizes = np.array(sizes)
-        sizes = (sizes - sizes.mean()) / sizes.std()
 
-        node_trace = go.Scatter(
-            x=node_x,
-            y=node_y,
-            mode='markers',
-            hoverinfo='text',
-            marker={"color": color,
-                    "size": 6 * sizes + 10},
-            hovertext=text,
-            name="Nodes")
-        """Add info to nodes."""
+        for k in nodes.keys():
+            nodes[k]["size"] = np.array(nodes[k]["size"])
+            nodes[k]["size"] = (nodes[k]["size"] - sizes.mean())\
+                / (sizes.std() + 1e-8)
 
-        fig = go.Figure()
-        fig.add_trace(edge_trace)
-        fig.add_trace(node_trace)
+            nodes[k]["size"] = np.nan_to_num(nodes[k]["size"])
+
+        # Add traces
+        for k in nodes.keys():
+            node_trace = go.Scatter(
+                x=nodes[k]["node_x"],
+                y=nodes[k]["node_y"],
+                mode='markers',
+                hoverinfo='text',
+                marker={
+                    "color": nodes[k]["color"],
+                    "size": 6 * nodes[k]["size"] + 10
+                },
+                hovertext=nodes[k]["text"],
+                name=k)
+
+            fig.add_trace(node_trace)
 
         fig.update_layout(
             title=go.layout.Title(
                 text="Visualization of Calculation Graph", xref="paper", x=0),
-        )
+            xaxis={
+                'showgrid': False,  # thin lines in the background
+                'zeroline': False,  # thick line at x=0
+                'visible': False,  # numbers below
+            },
+            yaxis={
+                'showgrid': False,  # thin lines in the background
+                'zeroline': False,  # thick line at x=0
+                'visible': False,  # numbers below
+            })
 
         fig.show(filename=self.filename)
 
