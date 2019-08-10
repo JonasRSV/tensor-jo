@@ -68,7 +68,7 @@ class node():
 
         self.gradient = np.zeros(self.shape())
         for con in self.c:
-            con_wrt_n = con.t.gradient_wrt(n)
+            con_wrt_n = con.n.gradient_wrt(n)
             self_wrt_con = con.gradient_op()
 
             # This might be the most important line of all in this program
@@ -133,9 +133,9 @@ class connection():
     should call to receive its gradients.
     """
 
-    def __init__(self, t: node, gradient_op):
+    def __init__(self, n: node, gradient_op):
         """Initialize the connection with the nodes and gradient op."""
-        self.t: node = t
+        self.n: node = n
         self.gradient_op = gradient_op
 
 

@@ -99,6 +99,92 @@ class graph():
             else:
                 n.output = n._output_no_cache
 
+    def remove(self, node: 'node.node'):
+        """Remove a node from the graph.
+
+        This function removes the node from the graph and all paths soley
+        dependant on this node.
+
+        This is a long function because it involves rather complex logic.
+
+        This logic is only used inside of this function so it did not warrant
+        it being split up in my humble opinion.
+        """
+        for c in node.connections:
+            if isinstance(c.n, node.functor):
+                """Recursivley remove these paths."""
+                self.remove(c.n)
+
+            elif isinstance(c.n, node.monoid):
+                """Remove the connection to this node.
+
+                In the process also truncate the graph and overwrite
+                the reference of this node with the other node connecting
+                to it.
+
+                This is pretty delicate with a lot of room for error.
+                """
+                # Step 1:
+                #    identify the 'other' node
+                other_node = None
+                if node == c.n.m1:
+                    other_node = c.n.m2
+                else:
+                    other_node = c.n.m1
+
+                # Step 2:
+                #    Remove connections to the monoid from the other node
+                for cc in other_node.c:
+                    if cc.n == c.n:
+                        other_node.c.remove(cc)
+
+                # Step 3:
+                #    truncate the graph by connecting the other node of the
+                #    monoid To all the things the monoid was connected to
+                for cc in c.n.c:
+                    if isinstance(cc.n, node.functor):
+                        # Connect for forward prop
+                        cc.n.m1 = other_node
+
+                        # Connect for differentiation
+                        other_node.c.append(
+                            node.connection(cc.n, cc.n.op.backward_functor))
+
+                    elif isinstance(cc.n, node.monoid):
+                        if cc.n.m1 == c.n:
+                            # Connect for forward prop
+                            cc.n.m1 = other_node
+
+                            # Connect for differentiation
+                            other_node.c.append(
+                                node.connection(cc.n, cc.n.op.backward_first))
+
+                        if cc.n.m2 == c.n:
+                            # Connect for forward prop
+                            cc.n.m2 = other_node
+
+                            # Connect for differentiation
+                            other_node.c.append(
+                                node.connection(cc.n, cc.n.op.backward_second))
+                    else:
+                        raise ValueError("Unknown node type %s" % type(cc.n))
+
+                # Step 4:
+                #     Remove monoid from graph.
+                # TODO
+            elif isinstance(c.n, node.primitive):
+                raise ValueError("Something has gone horribly wrong! " +
+                                 "A node cannot be connected to a primitive " +
+                                 "Please create an issue showing the graph " +
+                                 "and the node you tried removing.")
+            else:
+                raise ValueError("Something has gone horribly wrong! " +
+                                 "node must be connected to a node / nothing" +
+                                 "Please create an issue showing the graph " +
+                                 "and the node you tried removing.")
+
+            # Step 4:
+
 
 """Define some graph utilities."""
 
@@ -119,8 +205,10 @@ def get_calculation_dependencies(node: "node.node") -> ["node.node"]:
 
         mem.add(n)
 
+        # c is all the connections for a node.
+        # n is the node the connection connects to
         for c in n.c:
-            dfs(c.t)
+            dfs(c.n)
 
     dfs(node)
     return list(mem)
