@@ -1,4 +1,5 @@
 """Tensor module."""
+from tensorjo import viz
 import tensorjo as tj
 import numpy as np
 import logging
@@ -361,3 +362,36 @@ def test_cache():
 
     LOGGER.info("Running %s iters with no cache and update took %s seconds" %
                 (iters, time.time() - timestamp))
+
+
+def test_remove():
+    """Test the graph remove functionality."""
+    LOGGER.info("Testing removing a functor.")
+    LOGGER.info("Building Graph.")
+
+    tj.tjgraph.clear()
+
+    a = tj.var(5)
+    b = tj.sigmoid(a)
+    c = tj.sigmoid(b)
+    c = tj.sigmoid(c)
+
+    d = c + 5
+    d = d + 5
+
+    v = viz.visualizer(tj.tjgraph)
+
+    v.draw(d)
+
+    assert len(tj.tjgraph.nodes) == 6, "Graph should contain 5 nodes "\
+        + "Graph contains %s nodes" % len(tj.tjgraph.nodes)
+
+    tj.tjgraph.remove(a)
+
+    assert len(tj.tjgraph.nodes) == 1, "Graph should contain 1 monoid "\
+        + "Graph contains %s nodes" % len(tj.tjgraph.nodes)
+
+    o = d.output()
+    assert d.output() == 10, ("Output should be 5 is %s" % o)
+
+    v.draw(d)

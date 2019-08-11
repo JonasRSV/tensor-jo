@@ -17,6 +17,7 @@ A tiny tensor library written in python
   - [Logistic Regression](#logistic-regression)
   - [Cache](#cache)
   - [Visualization](#visualization)
+  - [Removing Nodes](#removing-nodes)
 
 ## What is this?
 ---
@@ -90,9 +91,18 @@ for i in range(1200):
 
 print("after training: coefficient %s -- bias: %s -- mse: %s" % (a, b,
                                                                  err.output()))
+```
 
-## Or use a builtin optimiser
+output
 
+```bash
+before training: coefficient 0.59156036 -- bias: 0.27047655 -- mse: 44.50837
+after training: coefficient 1.0008107 -- bias: 4.994916 -- mse: 7.4838827e-06
+```
+
+Using builtin optimiser
+
+```python3
 # Variables
 a = tj.var(np.random.rand())
 b = tj.var(np.random.rand())
@@ -108,16 +118,13 @@ opt.rounds = 1200
 opt.minimise([a, b])
 
 print("after training: coefficient %s -- bias: %s -- mse: %s" % (a, b,
-                                                                 err.output()))
 ```
 
 output
 
 ```bash
-before training: coefficient 0.59156036 -- bias: 0.27047655 -- mse: 44.50837
-after training: coefficient 1.0008107 -- bias: 4.994916 -- mse: 7.4838827e-06
 before training: coefficient 0.10065077 -- bias: 0.08387766 -- mse: 7.4838827e-06
-after training: coefficient 1.0008298 -- bias: 4.9947963 -- mse: 7.839944e-06<Plug>_
+after training: coefficient 1.0008298 -- bias: 4.9947963 -- mse: 7.839944e-06
 ```
 
 ### Logistic Regression
@@ -156,8 +163,18 @@ for i in range(5000):
 
 print("after training: coefficient %s -- bias: %s -- mse: %s" % (a, b,
                                                                  err.output()))
+```
 
-## Or use a builtin optimiser
+output
+
+```bash
+before training: coefficient 0.8239656 -- bias: 0.9479227 -- mse: 0.24330702
+after training: coefficient 3.9844732 -- bias: -1.0001798 -- mse: 1.2030186e-07
+```
+
+Using builtin optimiser
+
+```python3
 
 # Variables
 a = tj.var(np.random.rand())
@@ -182,8 +199,6 @@ print("after training: coefficient %s -- bias: %s -- mse: %s" % (a, b,
 output
 
 ```bash
-before training: coefficient 0.8239656 -- bias: 0.9479227 -- mse: 0.24330702
-after training: coefficient 3.9844732 -- bias: -1.0001798 -- mse: 1.2030186e-07
 before training: coefficient 0.81145114 -- bias: 0.68252563 -- mse: 0.19009504
 after training: coefficient 3.984306 -- bias: -1.0001817 -- mse: 1.229045e-07
 ```
@@ -305,3 +320,40 @@ v.draw(d)
 ```
 
 ![calcgraph](images/cgraph.png)
+
+## Removing nodes
+---
+
+The graph will be truncated as much as possible when a node is removed.
+
+```python3
+
+import tensorjo as tj
+from tensorjo import viz
+
+a = tj.var(5)
+b = tj.sigmoid(a)
+c = tj.sigmoid(b)
+c = tj.sigmoid(c)
+
+d = c + 5
+d = d + 5
+
+v = viz.visualizer(tj.tjgraph)
+
+v.draw(d)
+
+tj.tjgraph.remove(a)
+
+v.draw(d)
+
+```
+
+Before removing
+
+![beforer](images/beforer.png)
+
+
+After removing 
+
+![afterr](images/afterr.png)

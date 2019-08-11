@@ -99,7 +99,7 @@ class graph():
             else:
                 n.output = n._output_no_cache
 
-    def remove(self, node: 'node.node'):
+    def remove(self, n: 'node.node'):
         """Remove a node from the graph.
 
         This function removes the node from the graph and all paths soley
@@ -110,7 +110,7 @@ class graph():
         This logic is only used inside of this function so it did not warrant
         it being split up in my humble opinion.
         """
-        for c in node.connections:
+        for c in n.c:
             if isinstance(c.n, node.functor):
                 """Recursivley remove these paths."""
                 self.remove(c.n)
@@ -127,7 +127,7 @@ class graph():
                 # Step 1:
                 #    identify the 'other' node
                 other_node = None
-                if node == c.n.m1:
+                if n == c.n.m1:
                     other_node = c.n.m2
                 else:
                     other_node = c.n.m1
@@ -171,7 +171,8 @@ class graph():
 
                 # Step 4:
                 #     Remove monoid from graph.
-                # TODO
+                del self.nodes[c.n.name]
+
             elif isinstance(c.n, node.primitive):
                 raise ValueError("Something has gone horribly wrong! " +
                                  "A node cannot be connected to a primitive " +
@@ -183,7 +184,13 @@ class graph():
                                  "Please create an issue showing the graph " +
                                  "and the node you tried removing.")
 
-            # Step 4:
+            # Final step:
+            #    Remove this node from the graph.
+            del self.nodes[n.name]
+
+            # If is a variable remove it.
+            if n.name in self.variables:
+                del self.variables[n.name]
 
 
 """Define some graph utilities."""
