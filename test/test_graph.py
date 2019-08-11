@@ -1,5 +1,4 @@
 """Tensor module."""
-from tensorjo import viz
 import tensorjo as tj
 import numpy as np
 import logging
@@ -379,10 +378,6 @@ def test_remove():
     d = c + 5
     d = d + 5
 
-    v = viz.visualizer(tj.tjgraph)
-
-    v.draw(d)
-
     assert len(tj.tjgraph.nodes) == 6, "Graph should contain 5 nodes "\
         + "Graph contains %s nodes" % len(tj.tjgraph.nodes)
 
@@ -393,5 +388,3 @@ def test_remove():
 
     o = d.output()
     assert d.output() == 10, ("Output should be 5 is %s" % o)
-
-    v.draw(d)
